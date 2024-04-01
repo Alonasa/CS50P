@@ -9,11 +9,10 @@
             <p class="text-danger">{{message}}<a href="/register" class="btn text-primary">Register</a></p>
             {% endif %}
             {% if form %}
-            <form method="POST" >
+            <form method="post">
                 {{ form.hidden_tag() }}
                 {{ form.csrf_token }}
                 {{ render_form(form, novalidate=True) }}
-            
             </form>
             {% endif %}
         </div>
