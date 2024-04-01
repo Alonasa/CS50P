@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String, Column, Boolean, DateTime, ForeignKey
@@ -81,17 +81,37 @@ def add_user():
     pass
 
 
-@app.route('/authorize', methods=["POST", "GET"])
+@app.route("/authorize", methods=["GET", "POST"])
 def authorize():
-    form = LoginForm()
-    if request.method == "POST":
-        new_user = User(password=form.password.data.strip(), email=form.email.data.strip())
+    form = RegisterForm()
+    form_email = request.form.get("email")
 
+    if request.method == "POST" and form.validate_on_submit():
+        user = User.query.filter_by(email=form_email).first()
+
+        if user:
+            flash("You Are already Have An Account.... Redirecting To Login.....")
+            return redirect(url_for("login"))
+        new_user = User(password=form.password.data.strip(), email=form.email.data.strip())
         db.session.add(new_user)
         db.session.commit()
 
     return render_template("base-form.html", form=form)
 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    form = LoginForm()
+    password = form.password
+    email = form.email
+
+    if request.method == "POST" and form.validate_on_submit():
+        user = db.session.execute(db.select(User).where(User.email == email)).scalar()
+
+        if user:
+            print(user.to_dict())
+
+    return render_template("base-form.html", form=form)
 
 def create_task():
     pass
