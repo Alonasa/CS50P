@@ -5,11 +5,14 @@
  @description:  Main functions for todolist
 """
 
-
 import sqlite3
 import re
 import sys
 from helpers import title_gen, show_menu
+
+is_authenticated = False
+MENUS = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic", "Logout"]
+
 
 def initialize_db():
     connection = sqlite3.connect('database.db')
@@ -75,12 +78,15 @@ def email_checker(email):
 
 
 class Validate:
-    def email(self, authorized=False):
+
+    @staticmethod
+    def email(authorized=False):
         email = input("Your Email: ").strip()
         if email_checker(email):
             return email
 
-    def password(self, authorized=False):
+    @staticmethod
+    def password(authorized=False):
         extra_message = " (Must contain at least 8 chars and contain character, number and letter in it)"
         password = input(f"Your Password{'' if authorized else extra_message}: ").strip()
         if password_checker(password):
@@ -128,7 +134,7 @@ def authorize():
 
 def add_user(email):
     print(f"I am not in the System. But I want to become user")
-    password = validate_field('password')
+    password = validate_field('password', False)
     if password:
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
@@ -144,30 +150,68 @@ def add_user(email):
 
 
 def login(email, password):
+    global is_authenticated
+
     connection = sqlite3.connect("database.db")
     cursor = connection.cursor()
-    authorize_pass = f"SELECT password FROM users WHERE email == '{email}'"
+    authorize_pass = f"SELECT id, password FROM users WHERE email == '{email}'"
     cursor.execute(authorize_pass)
     fetched_password = cursor.fetchone()
-    if fetched_password and fetched_password[0] == password:
-        menus = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic"]
+    if fetched_password and fetched_password[1] == password:
+        is_authenticated = True
         title_gen("Todo List", 0)
-        show_menu(menus)
+        show_menu(MENUS)
+
+        generate_menu_items()
+
     else:
         print('Password is incorrect')
 
     connection.commit()
 
+
+def generate_menu_items():
+    length = len(MENUS)
+    choice = True
+
+    while choice:
+        try:
+            user_choice = int(input("Chose the number from the menu: "))
+            if user_choice in range(1, length + 1):
+                if user_choice == 1:
+                    view_tasks()
+                elif user_choice == 2:
+                    create_task()
+                elif user_choice == 3:
+                    update_task()
+                elif user_choice == 4:
+                    delete_task()
+                elif user_choice == 5:
+                    show_statistic()
+                else:
+                    sys.exit("Thank you for using our program!!!")
+
+            else:
+                print(f"Menu must be in the range 1 - {length}")
+
+        except ValueError:
+            print(f"Chose menu in the range 1 - {length}")
+
+
+def view_tasks():
+    print('View tasks')
+
+
 def create_task():
-    pass
+    print('Create task')
 
 
 def update_task():
-    pass
+    print('Update task')
 
 
 def delete_task():
-    pass
+    print('Delete task')
 
 
 def show_statistic():
