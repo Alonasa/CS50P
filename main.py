@@ -1,36 +1,50 @@
+"""
+ @author:   Alona Skrypnyk
+ @date:     04-April-2024
+ @project:  Todolist
+ @description:  Main functions for todolist
+"""
+
+
 import sqlite3
 import re
+import sys
+from helpers import title_gen, show_menu
 
-connection = sqlite3.connect('database.db')
-cursor = connection.cursor()
+def initialize_db():
+    connection = sqlite3.connect('database.db')
+    cursor = connection.cursor()
 
-# Create the users table
-create_users_table_query = '''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        password TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE
-    )
-'''
-cursor.execute(create_users_table_query)
+    # Create the users table
+    create_users_table_query = '''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            password TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE
+        )
+    '''
+    cursor.execute(create_users_table_query)
 
-# Create the tasks table
-create_tasks_table_query = '''
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        date TEXT NOT NULL,
-        deadline TEXT NOT NULL,
-        finished TEXT NOT NULL,
-        is_done INTEGER NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    )
-'''
-cursor.execute(create_tasks_table_query)
+    # Create the tasks table
+    create_tasks_table_query = '''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            date TEXT NOT NULL,
+            deadline TEXT NOT NULL,
+            finished TEXT NOT NULL,
+            is_done INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    '''
+    cursor.execute(create_tasks_table_query)
 
-# Commit the changes and close the connection
-connection.commit()
-connection.close()
+    # Commit the changes and close the connection
+    connection.commit()
+    connection.close()
+
+
+initialize_db()
 
 
 def validate_email(email):
@@ -42,6 +56,7 @@ def validate_password(password):
     pattern = r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d\W_]+$'
     return re.search(pattern, password) is not None
 
+
 def password_checker(password):
     leng = len(password)
     if leng < 8:
@@ -51,40 +66,45 @@ def password_checker(password):
     else:
         return True
 
+
 def email_checker(email):
     if not validate_email(email):
         print("You input email is in incorrect format")
     else:
         return True
 
+
 class Validate:
-    def email(self):
+    def email(self, authorized=False):
         email = input("Your Email: ").strip()
         if email_checker(email):
             return email
-    def password(self):
-        password = input("Your Password (Must contain at least 8 chars and contain character, number and letter in it): ").strip()
+
+    def password(self, authorized=False):
+        extra_message = " (Must contain at least 8 chars and contain character, number and letter in it)"
+        password = input(f"Your Password{'' if authorized else extra_message}: ").strip()
         if password_checker(password):
             return password
 
 
-def validate_field(field):
+def validate_field(field, authorized):
     check = Validate()
     invalid = True
     while invalid:
         method = getattr(check, field)
-        current_field = method()
+        current_field = method(authorized)
         if current_field:
             return current_field
+
 
 def authorize():
     # Connect to the database
     connection = sqlite3.connect("database.db")
     cursor = connection.cursor()
 
-    mail = validate_field('email')
+    mail = validate_field('email', False)
     if mail:
-    # Execute a SELECT query
+        # Execute a SELECT query
         user = f"SELECT * FROM users WHERE email = '{mail}'"
 
         cursor.execute(user)
@@ -93,7 +113,7 @@ def authorize():
 
         if result:
             print("We find you in our system")
-            password = validate_field('password')
+            password = validate_field('password', True)
             if password:
                 login(mail, password)
         else:
@@ -104,6 +124,7 @@ def authorize():
                 sys.exit("Bye. Thank you for choosing our app!!!")
 
         connection.close()
+
 
 def add_user(email):
     print(f"I am not in the System. But I want to become user")
@@ -123,9 +144,11 @@ def add_user(email):
         login(email, password)
 
 
-
 def login(email, password):
-    print('In the system')
+    menus = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic"]
+    title_gen("Todo List", 0)
+    show_menu(menus)
+
 
 
 def create_task():
@@ -142,6 +165,7 @@ def delete_task():
 
 def show_statistic():
     pass
+
 
 def main():
     authorize()
