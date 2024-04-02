@@ -132,7 +132,6 @@ def add_user(email):
     if password:
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
-
         insert_user_query = f"INSERT INTO users (password, email) VALUES ('{password}', '{email}')"
 
         # Execute the INSERT query
@@ -145,11 +144,19 @@ def add_user(email):
 
 
 def login(email, password):
-    menus = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic"]
-    title_gen("Todo List", 0)
-    show_menu(menus)
+    connection = sqlite3.connect("database.db")
+    cursor = connection.cursor()
+    authorize_pass = f"SELECT password FROM users WHERE email == '{email}'"
+    cursor.execute(authorize_pass)
+    fetched_password = cursor.fetchone()
+    if fetched_password and fetched_password[0] == password:
+        menus = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic"]
+        title_gen("Todo List", 0)
+        show_menu(menus)
+    else:
+        print('Password is incorrect')
 
-
+    connection.commit()
 
 def create_task():
     pass
