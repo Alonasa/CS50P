@@ -4,7 +4,7 @@
  @project:  Todolist
  @description:  Main functions for todolist
 """
-
+import datetime
 import sqlite3
 import re
 import sys
@@ -32,10 +32,11 @@ def initialize_db():
     create_tasks_table_query = '''
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
             user_id INTEGER,
             date TEXT NOT NULL,
             deadline TEXT NOT NULL,
-            finished TEXT NOT NULL,
+            finished TEXT,
             is_done INTEGER NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
@@ -157,20 +158,19 @@ def login(email, password):
     authorize_pass = f"SELECT id, password FROM users WHERE email == '{email}'"
     cursor.execute(authorize_pass)
     fetched_password = cursor.fetchone()
+    print(fetched_password)
     if fetched_password and fetched_password[1] == password:
         is_authenticated = True
         title_gen("Todo List", 0)
         show_menu(MENUS)
-
-        generate_menu_items()
-
+        generate_menu_items(fetched_password[0])
     else:
         print('Password is incorrect')
 
     connection.commit()
 
 
-def generate_menu_items():
+def generate_menu_items(u_id):
     length = len(MENUS)
     choice = True
 
@@ -181,7 +181,7 @@ def generate_menu_items():
                 if user_choice == 1:
                     view_tasks()
                 elif user_choice == 2:
-                    create_task()
+                    create_task(u_id)
                 elif user_choice == 3:
                     update_task()
                 elif user_choice == 4:
@@ -191,19 +191,54 @@ def generate_menu_items():
                 else:
                     sys.exit("Thank you for using our program!!!")
 
-            else:
-                print(f"Menu must be in the range 1 - {length}")
-
         except ValueError:
-            print(f"Chose menu in the range 1 - {length}")
+            raise ValueError(f"Chose menu in the range 1 - {length}")
+        except KeyboardInterrupt:
+            sys.exit("Bye, Bye")
 
 
 def view_tasks():
     print('View tasks')
 
 
-def create_task():
-    print('Create task')
+def check_deadline(data):
+    no_input = True
+    while no_input:
+        try:
+            format_string = "%Y-%m-%d"
+            user_date = datetime.datetime.strptime(data, format_string).date()
+            return user_date
+        except ValueError:
+            print("Invalid date format. Please enter a date in the format YYYY-MM-DD.")
+            data = input("Enter a valid date YYYY-MM-DD: ")
+
+
+def get_deadline():
+    deadline = input("Enter the date of Deadline (YYYY-MM-DD): ")
+    return check_deadline(deadline)
+
+
+def get_title():
+    invalid = True
+    while invalid:
+        title = input("Add task title: ").strip()
+        if len(title) > 1:
+            return title
+        else:
+            print("Title can't be empty")
+            return get_title()
+
+
+def create_task(u_id):
+    deadline = get_deadline()
+    connection = sqlite3.connect("database.db")
+    cursor = connection.cursor()
+    title = get_title()
+
+    data = (u_id, title, datetime.datetime.now(), deadline, 0)
+    cursor.execute("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)", data)
+    connection.commit()
+    connection.close()
 
 
 def update_task():
