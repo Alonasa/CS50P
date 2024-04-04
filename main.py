@@ -9,6 +9,7 @@ import sqlite3
 import re
 import sys
 from helpers import title_gen, show_menu
+from tabulate import tabulate
 
 is_authenticated = False
 MENUS = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic", "Logout"]
@@ -179,15 +180,20 @@ def generate_menu_items(u_id):
             user_choice = int(input("Chose the number from the menu: "))
             if user_choice in range(1, length + 1):
                 if user_choice == 1:
-                    view_tasks()
+                    view_tasks(u_id)
+                    show_menu(MENUS)
                 elif user_choice == 2:
                     create_task(u_id)
+                    show_menu(MENUS)
                 elif user_choice == 3:
                     update_task()
+                    show_menu(MENUS)
                 elif user_choice == 4:
                     delete_task()
+                    show_menu(MENUS)
                 elif user_choice == 5:
                     show_statistic()
+                    show_menu(MENUS)
                 else:
                     sys.exit("Thank you for using our program!!!")
 
@@ -197,8 +203,20 @@ def generate_menu_items(u_id):
             sys.exit("Bye, Bye")
 
 
-def view_tasks():
-    print('View tasks')
+def view_tasks(user_id):
+    connection = sqlite3.connect("database.db")
+    cursor = connection.cursor()
+    get_tasks = f"SELECT * FROM tasks WHERE user_id == '{user_id}'"
+    cursor.execute(get_tasks)
+    tasks = cursor.fetchall()
+    data = []
+    for el in tasks:
+        data.append(list(el))
+    clean_data = [["Title", "Deadline", "Status"]]
+    for i in data:
+        n = [i[1], i[4], "Finished" if i[5] == 0 else "In Process"]
+        clean_data.append(n)
+    print(tabulate(clean_data, tablefmt="grid"))
 
 
 def check_deadline(data):
