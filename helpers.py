@@ -11,7 +11,7 @@ def title_gen(title, expired, helper='*'):
     (string, string, int) -> None
     Generate pretty game title, according to arguments passing by user
     """
-    length = 60
+    length = 75
     line = length * helper
     exp = ''
     length_last = len(str(expired)) + 1

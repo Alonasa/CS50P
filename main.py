@@ -62,7 +62,7 @@ def fetch_and_display_tasks(user_id):
     headers = ["Task number", "Title", "Deadline", "Status"]
     clean_data = [headers] + [[index + 1, task[1], task[4], "Finished" if task[6] == 1 else "In Process"]
                               for index, task in enumerate(tasks)]
-    print("TODOLIST".center(70))
+    title_gen("Todo List", 0)
     print(tabulate(clean_data, tablefmt="grid"))
     return tasks
 
@@ -197,7 +197,7 @@ def get_number_in_interval(min_val, max_val):
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
-    print('\n' * 100)
+    print('\n' * 70)
 
 
 def check_deadline(data):
@@ -236,6 +236,7 @@ def generate_menu_items(user_id=1):
             user_choice = int(input("Choose the number from the menu: "))
             if 1 <= user_choice <= len(MENUS):
                 if user_choice == 1:
+                    title_gen("Todo List", 0)
                     fetch_and_display_tasks(user_id)
                 elif user_choice == 2:
                     create_task(user_id)
@@ -256,6 +257,7 @@ def generate_menu_items(user_id=1):
 
 def create_task(user_id):
     clear_screen()
+    title_gen("Todo List", 0)
     title = get_title()
     deadline = get_deadline()
     execute_db("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)",
@@ -264,6 +266,7 @@ def create_task(user_id):
 
 def update_task(user_id):
     clear_screen()
+    title_gen("Todo List", 0)
     tasks = fetch_and_display_tasks(user_id)
     if tasks:
         task_number = int(get_number_in_interval(1, len(tasks)))
@@ -274,6 +277,7 @@ def update_task(user_id):
 
 def delete_task(user_id):
     clear_screen()
+    title_gen("Todo List", 0)
     tasks = fetch_and_display_tasks(user_id)
     if tasks:
         task_number = int(get_number_in_interval(1, len(tasks)))
@@ -287,6 +291,7 @@ def get_timedelta(date):
 
 def show_statistic(user_id):
     clear_screen()
+    title_gen("Todo List", 0)
     tasks = execute_db("SELECT * FROM tasks WHERE user_id = ?", (user_id,), fetch=True)
     if not tasks:
         print("No tasks found for this user.")
