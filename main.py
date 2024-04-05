@@ -171,7 +171,19 @@ def login(email, password):
     connection.commit()
 
 
-def generate_menu_items(u_id):
+def get_number_in_interval(min_val, max_val):
+    while True:
+        try:
+            number = float(input(f"Enter a number between {min_val} and {max_val}: "))
+            if min_val <= number <= max_val:
+                return number
+            else:
+                print(f"Please enter a number between {min_val} and {max_val}.")
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+
+
+def generate_menu_items(user_id=1):
     length = len(MENUS)
     choice = True
 
@@ -180,13 +192,13 @@ def generate_menu_items(u_id):
             user_choice = int(input("Chose the number from the menu: "))
             if user_choice in range(1, length + 1):
                 if user_choice == 1:
-                    view_tasks(u_id)
+                    view_tasks(user_id)
                     show_menu(MENUS)
                 elif user_choice == 2:
-                    create_task(u_id)
+                    create_task(user_id)
                     show_menu(MENUS)
                 elif user_choice == 3:
-                    update_task()
+                    update_task(user_id)
                     show_menu(MENUS)
                 elif user_choice == 4:
                     delete_task()
@@ -212,11 +224,12 @@ def view_tasks(user_id):
     data = []
     for el in tasks:
         data.append(list(el))
-    clean_data = [["Title", "Deadline", "Status"]]
+    clean_data = [["Task number", "Title", "Deadline", "Status"]]
     for i in data:
-        n = [i[1], i[4], "Finished" if i[5] == 0 else "In Process"]
+        n = [i[0], i[1], i[4], "Finished" if i[6] == 1 else "In Process"]
         clean_data.append(n)
     print(tabulate(clean_data, tablefmt="grid"))
+    cursor.close()
 
 
 def check_deadline(data):
@@ -247,20 +260,32 @@ def get_title():
             return get_title()
 
 
-def create_task(u_id):
+def create_task(user_id):
     deadline = get_deadline()
     connection = sqlite3.connect("database.db")
     cursor = connection.cursor()
     title = get_title()
 
-    data = (u_id, title, datetime.datetime.now(), deadline, 0)
+    data = (user_id, title, datetime.datetime.now(), deadline, 0)
     cursor.execute("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)", data)
     connection.commit()
     connection.close()
 
 
-def update_task():
+def update_task(user_id):
     print('Update task')
+    connection = sqlite3.connect("database.db")
+    cursor = connection.cursor()
+    get_tasks = f"SELECT * FROM tasks WHERE user_id == '{user_id}'"
+    cursor.execute(get_tasks)
+    tasks = cursor.fetchall()
+    view_tasks(user_id)
+    task_id = get_number_in_interval(1, len(tasks))
+    change_status = f"UPDATE tasks SET is_done = ?, finished= ? WHERE user_id = ? AND id = ?"
+    cursor.execute(change_status, (1, datetime.datetime.now().date(), user_id, task_id))
+    print("Status is changed")
+
+    connection.commit()
 
 
 def delete_task():
@@ -272,7 +297,8 @@ def show_statistic():
 
 
 def main():
-    authorize()
+    show_menu(MENUS)
+    generate_menu_items(1)
 
 
 if __name__ == "__main__":
