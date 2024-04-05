@@ -247,7 +247,7 @@ def generate_menu_items(user_id=1):
                 elif user_choice == 4:
                     delete_task(user_id)
                 elif user_choice == 5:
-                    show_statistic()
+                    show_statistic(user_id)
                 elif user_choice == 6:
                     print("Thank you for using our program!!!")
                     break
@@ -284,8 +284,38 @@ def delete_task(user_id):
         execute_db("DELETE FROM tasks WHERE user_id = ? AND id = ?", (user_id, task_id))
 
 
-def show_statistic():
-    pass
+def get_timedelta(date):
+    return datetime.datetime.strptime(date, "%Y-%m-%d").date()
+
+
+def show_statistic(user_id):
+    clear_screen()
+    tasks = execute_db("SELECT * FROM tasks WHERE user_id = ?", (user_id,), fetch=True)
+    if not tasks:
+        print("No tasks found for this user.")
+        return tasks
+    current_date = datetime.datetime.now().date()
+
+    statistic = {
+        "in_progress": 0,
+        "finished":    0,
+        "expired":     0,
+        "overdue":     0
+    }
+    items = [task for task in tasks]
+    for i in items:
+        if i[5] is None:
+            if current_date < get_timedelta(i[4]):
+                statistic["in_progress"] += 1
+            elif current_date > get_timedelta(i[4]):
+                statistic["expired"] += 1
+        elif get_timedelta(i[5]) > get_timedelta(i[4]):
+            statistic["overdue"] += 1
+        else:
+            statistic["finished"] += 1
+    elements = [list(statistic.keys()), list(statistic.values())]
+
+    print(tabulate(elements, tablefmt="grid"))
 
 
 def main():
