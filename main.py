@@ -95,7 +95,6 @@ def email_checker(email):
 
 
 class Validate:
-
     @staticmethod
     def email(authorized=False):
         email = input("Your Email: ").strip()
@@ -132,7 +131,6 @@ def authorize():
 
         cursor.execute(user)
         result = cursor.fetchall()
-        print(result)
 
         if result:
             print("We find you in our system")
@@ -174,11 +172,10 @@ def login(email, password):
     authorize_pass = f"SELECT id, password FROM users WHERE email == '{email}'"
     cursor.execute(authorize_pass)
     fetched_password = cursor.fetchone()
-    print(fetched_password)
     if fetched_password and fetched_password[1] == password:
         is_authenticated = True
+        clear_screen()
         title_gen("Todo List", 0)
-        show_menu(MENUS)
         generate_menu_items(fetched_password[0])
     else:
         print('Password is incorrect')
@@ -313,15 +310,16 @@ def show_statistic(user_id):
             statistic["overdue"] += 1
         else:
             statistic["finished"] += 1
-    elements = [list(statistic.keys()), list(statistic.values())]
 
+    elements = [list(statistic.keys()), list(statistic.values())]
     print(tabulate(elements, tablefmt="grid"))
 
 
 def main():
     clear_screen()
-    # show_menu(MENUS)
-    generate_menu_items(1)
+    authorize()
+    # # show_menu(MENUS)
+    # generate_menu_items(1)
 
 
 if __name__ == "__main__":
