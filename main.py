@@ -17,40 +17,54 @@ MENUS = ["View Tasks", "Add Task", "Set Is Done", "Remove Task", "Show Statistic
 
 
 def initialize_db():
-    connection = sqlite3.connect('database.db')
-    cursor = connection.cursor()
+    with sqlite3.connect('database.db') as conn:
+        cursor = conn.cursor()
 
-    # Create the users table
-    create_users_table_query = '''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            password TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE
-        )
-    '''
-    cursor.execute(create_users_table_query)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                password TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE
+            )
+        ''')
 
-    # Create the tasks table
-    create_tasks_table_query = '''
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            user_id INTEGER,
-            date TEXT NOT NULL,
-            deadline TEXT NOT NULL,
-            finished TEXT,
-            is_done INTEGER NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    '''
-    cursor.execute(create_tasks_table_query)
-
-    # Commit the changes and close the connection
-    connection.commit()
-    connection.close()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                user_id INTEGER,
+                date TEXT NOT NULL,
+                deadline TEXT NOT NULL,
+                finished TEXT,
+                is_done INTEGER NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
 
 
-initialize_db()
+def execute_db(query, params=(), fetch=False):
+    with sqlite3.connect("database.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        if fetch:
+            return cursor.fetchall()
+        else:
+            conn.commit()
+
+
+def fetch_and_display_tasks(user_id):
+    clear_screen()
+    tasks = execute_db("SELECT * FROM tasks WHERE user_id = ?", (user_id,), fetch=True)
+    if not tasks:
+        print("No tasks found for this user.")
+        return tasks
+
+    headers = ["Task number", "Title", "Deadline", "Status"]
+    clean_data = [headers] + [[index + 1, task[1], task[4], "Finished" if task[6] == 1 else "In Process"]
+                              for index, task in enumerate(tasks)]
+    print("TODOLIST".center(70))
+    print(tabulate(clean_data, tablefmt="grid"))
+    return tasks
 
 
 def validate_email(email):
@@ -189,60 +203,6 @@ def clear_screen():
     print('\n' * 100)
 
 
-def generate_menu_items(user_id=1):
-    length = len(MENUS)
-    choice = True
-
-    while choice:
-        show_menu(MENUS)
-        try:
-            user_choice = int(input("Chose the number from the menu: "))
-            if user_choice in range(1, length + 1):
-                if user_choice == 1:
-                    view_tasks(user_id)
-                elif user_choice == 2:
-                    create_task(user_id)
-                elif user_choice == 3:
-                    update_task(user_id)
-                elif user_choice == 4:
-                    delete_task(user_id)
-                elif user_choice == 5:
-                    show_statistic()
-                else:
-                    sys.exit("Thank you for using our program!!!")
-
-        except ValueError:
-            raise ValueError(f"Chose menu in the range 1 - {length}")
-        except KeyboardInterrupt:
-            sys.exit("Bye, Bye")
-
-
-def view_tasks(user_id):
-    clear_screen()
-    connection = sqlite3.connect("database.db")
-    cursor = connection.cursor()
-    get_tasks = f"SELECT * FROM tasks WHERE user_id == '{user_id}'"
-    cursor.execute(get_tasks)
-    tasks = cursor.fetchall()
-
-    if not tasks:
-        print("No tasks found for this user.")
-        return
-
-    data = []
-    for el in tasks:
-        data.append(list(el))
-    clean_data = [["Task number", "Title", "Deadline", "Status"]]
-    for index, el in enumerate(data, start=1):
-        n = [index, el[1], el[4], "Finished" if el[6] == 1 else "In Process"]
-        clean_data.append(n)
-    clear_screen()
-    print("TODOLIST".center(70))
-    print(tabulate(clean_data, tablefmt="grid"))
-
-    cursor.close()
-
-
 def check_deadline(data):
     clear_screen()
     no_input = True
@@ -272,54 +232,56 @@ def get_title():
             return get_title()
 
 
+def generate_menu_items(user_id=1):
+    while True:
+        show_menu(MENUS)
+        try:
+            user_choice = int(input("Choose the number from the menu: "))
+            if 1 <= user_choice <= len(MENUS):
+                if user_choice == 1:
+                    fetch_and_display_tasks(user_id)
+                elif user_choice == 2:
+                    create_task(user_id)
+                elif user_choice == 3:
+                    update_task(user_id)
+                elif user_choice == 4:
+                    delete_task(user_id)
+                elif user_choice == 5:
+                    show_statistic()
+                elif user_choice == 6:
+                    print("Thank you for using our program!!!")
+                    break
+            else:
+                print(f"Please choose a number in the range 1 - {len(MENUS)}")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+
 def create_task(user_id):
     clear_screen()
-    deadline = get_deadline()
-    connection = sqlite3.connect("database.db")
-    cursor = connection.cursor()
     title = get_title()
-
-    data = (user_id, title, datetime.datetime.now(), deadline, 0)
-    cursor.execute("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)", data)
-    connection.commit()
-    connection.close()
+    deadline = get_deadline()
+    execute_db("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)",
+               (user_id, title, datetime.datetime.now(), deadline, 0))
 
 
 def update_task(user_id):
     clear_screen()
-    connection = sqlite3.connect("database.db")
-    cursor = connection.cursor()
-    get_tasks = f"SELECT * FROM tasks WHERE user_id == '{user_id}'"
-    cursor.execute(get_tasks)
-    tasks = cursor.fetchall()
-    view_tasks(user_id)
-    task_number = int(get_number_in_interval(1, len(tasks)))
-    task_id = tasks[task_number - 1][0]
-    change_status = f"UPDATE tasks SET is_done = not is_done, finished= ? WHERE user_id = ? AND id = ?"
-    cursor.execute(change_status, (datetime.datetime.now().date(), user_id, task_id))
-    print("Status is changed")
-    connection.commit()
+    tasks = fetch_and_display_tasks(user_id)
+    if tasks:
+        task_number = int(get_number_in_interval(1, len(tasks)))
+        task_id = tasks[task_number - 1][0]
+        execute_db("UPDATE tasks SET is_done = not is_done, finished = ? WHERE user_id = ? AND id = ?",
+                   (datetime.datetime.now().date(), user_id, task_id))
 
 
 def delete_task(user_id):
     clear_screen()
-    connection = sqlite3.connect("database.db")
-    cursor = connection.cursor()
-    cursor.execute(f"SELECT * FROM tasks WHERE user_id == '{user_id}'")
-    tasks = cursor.fetchall()
-
-    if not tasks:
-        print("No tasks found for this user.")
-        return
-
-    view_tasks(user_id)
-    task_number = int(get_number_in_interval(1, len(tasks)))
-    task_id = tasks[task_number - 1][0]
-    delete = f"DELETE FROM tasks WHERE user_id = ? AND id = ?"
-    cursor.execute(delete, (user_id, task_id))
-
-    connection.commit()
-    connection.close()
+    tasks = fetch_and_display_tasks(user_id)
+    if tasks:
+        task_number = int(get_number_in_interval(1, len(tasks)))
+        task_id = tasks[task_number - 1][0]
+        execute_db("DELETE FROM tasks WHERE user_id = ? AND id = ?", (user_id, task_id))
 
 
 def show_statistic():
