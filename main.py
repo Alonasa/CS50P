@@ -261,7 +261,7 @@ def create_task(user_id):
     title = get_title()
     deadline = get_deadline()
     execute_db("INSERT INTO tasks (user_id, title, date, deadline, is_done) VALUES (?, ?, ?, ?, ?)",
-               (user_id, title, datetime.datetime.now(), deadline, 0))
+               (user_id, title, datetime.datetime.now().date(), deadline, 0))
 
 
 def update_task(user_id):
