@@ -1,3 +1,4 @@
+import datetime
 import os
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_bootstrap import Bootstrap
@@ -6,7 +7,8 @@ from sqlalchemy import Integer, String, Column, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, relationship
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-from wtforms.fields.simple import EmailField, PasswordField, SubmitField
+from wtforms.fields.datetime import DateTimeField
+from wtforms.fields.simple import EmailField, PasswordField, SubmitField, StringField
 from wtforms.validators import DataRequired, Length
 
 app = Flask(__name__)
@@ -44,8 +46,8 @@ class Task(db.Model):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
-    deadline = Column(DateTime, nullable=False)
-    finished = Column(DateTime, default=None, nullable=False)
+    deadline = Column(DateTime, default=None)
+    finished = Column(DateTime, default=None)
     is_done = Column(Boolean, nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"))
     author = relationship("User", back_populates="tasks")
@@ -64,12 +66,24 @@ class BaseForm(FlaskForm):
                              render_kw={"placeholder": "password at least 8 chars"})
 
 
+def yellow_submit(title):
+    return SubmitField(title, render_kw={"class": "btn-warning btn-sm mt-3"})
+
+
 class RegisterForm(BaseForm):
-    submit = SubmitField("Register", render_kw={"class": "btn-warning btn-sm mt-3"})
+    submit = yellow_submit("Register")
 
 
 class LoginForm(BaseForm):
-    submit = SubmitField("Login", render_kw={"class": "btn-warning btn-sm mt-3"})
+    submit = yellow_submit("Login")
+
+
+class AddTaskForm(FlaskForm):
+    title = StringField("Task Title", validators=[DataRequired()],
+                        render_kw={"placeholder": "Task title, min length 2"})
+    deadline = DateTimeField("Deadline Date", format="%Y-%m-%d", validators=[DataRequired()],
+                             render_kw={"placeholder": "YYYY-MM-DD"})
+    submit = yellow_submit("Add task")
 
 
 @app.route('/')
@@ -112,14 +126,22 @@ def login():
         user = db.session.execute(db.select(User).where(User.email == email)).scalar()
         if user and user.password == password:
             flash('Authorized in the system'.title())
+            return create_task(user.id)
         else:
             flash('Some of the fields is wrong'.title())
 
     return render_template("base-form.html", form=form)
 
 
-def create_task():
-    pass
+def create_task(author_id):
+    form = AddTaskForm()
+    new_task = Task(date=datetime.datetime.now().date(), deadline=form.deadline.data, is_done=False,
+                    author_id=author_id)
+    db.session.add(new_task)
+    db.session.commit()
+    db.session.close()
+    return render_template("tasks.html", form=form)
+
 
 
 def update_task():
