@@ -77,24 +77,27 @@ def main():
     return render_template("base.html")
 
 
-def add_user():
-    pass
+def add_user(password, email):
+    new_user = User(password=password, email=email)
+    db.session.add(new_user)
+    db.session.commit()
+    db.session.close()
 
 
 @app.route("/authorize", methods=["GET", "POST"])
 def authorize():
     form = RegisterForm()
-    form_email = request.form.get("email")
+    form_email = form.email.data
+    form_password = form.password.data
 
     if request.method == "POST" and form.validate_on_submit():
-        user = User.query.filter_by(email=form_email).first()
+        user = User.query.filter_by(email=form_email.strip()).first()
 
         if user:
-            flash("You Are already Have An Account.... Redirecting To Login.....")
+            flash("You are already have an account.... Redirecting to login.....".title())
             return redirect(url_for("login"))
-        new_user = User(password=form.password.data.strip(), email=form.email.data.strip())
-        db.session.add(new_user)
-        db.session.commit()
+        add_user(form_password.strip(), form_email.strip())
+        flash("New user added to the system".title())
 
     return render_template("base-form.html", form=form)
 
@@ -102,14 +105,15 @@ def authorize():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
-    password = form.password
-    email = form.email
+    password = request.form.get("password")
+    email = request.form.get("email")
 
     if request.method == "POST" and form.validate_on_submit():
         user = db.session.execute(db.select(User).where(User.email == email)).scalar()
-
-        if user:
-            print(user.to_dict())
+        if user and user.password == password:
+            flash('Authorized in the system'.title())
+        else:
+            flash('Some of the fields is wrong'.title())
 
     return render_template("base-form.html", form=form)
 
