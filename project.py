@@ -1,6 +1,6 @@
 import datetime
 import os
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String, Column, Boolean, DateTime, ForeignKey
@@ -126,9 +126,9 @@ def login():
     if request.method == "POST" and form.validate_on_submit():
         user = db.session.execute(db.select(User).where(User.email == email)).scalar()
         if user and user.password == password:
-            print(user.id)
+            session['user_id'] = user.id  # Storing user_id in session
             flash('Authorized in the system'.title())
-            return create_task(user.id)
+            return redirect(url_for("create_task"))
         else:
             flash('Some of the fields is wrong'.title())
 
@@ -136,14 +136,24 @@ def login():
 
 
 @app.route("/add-task", methods=["POST", "GET"])
-def create_task(author_id):
+def create_task():
     form = AddTaskForm()
-    new_task = Task(date=datetime.datetime.now().date(), title='dss', deadline=form.deadline.data,
-                    is_done=False,
-                    author_id=author_id)
-    db.session.add(new_task)
-    flash("New Task Added")
-    db.session.commit()
+    if 'user_id' not in session:
+        flash("You are not logged in.")
+        return redirect(url_for("login"))
+
+    if request.method == "POST" and form.validate_on_submit():
+        new_task = Task(
+            date=datetime.datetime.now().date(),
+            title=form.title.data,
+            deadline=form.deadline.data,
+            is_done=False,
+            author_id=session['user_id']
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        flash("New Task Added")
+
     return render_template("tasks.html", form=form)
 
 
