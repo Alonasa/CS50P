@@ -46,6 +46,7 @@ class Task(db.Model):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
+    title = Column(String(250), nullable=False)
     deadline = Column(DateTime, default=None)
     finished = Column(DateTime, default=None)
     is_done = Column(Boolean, nullable=False)
@@ -125,6 +126,7 @@ def login():
     if request.method == "POST" and form.validate_on_submit():
         user = db.session.execute(db.select(User).where(User.email == email)).scalar()
         if user and user.password == password:
+            print(user.id)
             flash('Authorized in the system'.title())
             return create_task(user.id)
         else:
@@ -133,15 +135,16 @@ def login():
     return render_template("base-form.html", form=form)
 
 
+@app.route("/add-task", methods=["POST", "GET"])
 def create_task(author_id):
     form = AddTaskForm()
-    new_task = Task(date=datetime.datetime.now().date(), deadline=form.deadline.data, is_done=False,
+    new_task = Task(date=datetime.datetime.now().date(), title='dss', deadline=form.deadline.data,
+                    is_done=False,
                     author_id=author_id)
     db.session.add(new_task)
+    flash("New Task Added")
     db.session.commit()
-    db.session.close()
     return render_template("tasks.html", form=form)
-
 
 
 def update_task():
