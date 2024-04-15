@@ -153,6 +153,8 @@ def create_task():
         db.session.add(new_task)
         db.session.commit()
         flash("New Task Added")
+        print(get_tasks())
+        return render_template("show-tasks.html", tasks=get_tasks())
 
     return render_template("tasks.html", form=form)
 
@@ -167,6 +169,19 @@ def delete_task():
 
 def show_statistic():
     pass
+
+
+def get_tasks():
+    user_id = session.get('user_id')
+    tasks = Task.query.filter_by(author_id=user_id).all()
+    print(tasks)
+    return tasks
+
+
+@app.route("/tasks")
+def show_tasks():
+    tasks = get_tasks()
+    render_template("show-tasks.html", tasks=tasks)
 
 
 if __name__ == "__main__":

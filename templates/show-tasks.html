@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if tasks %}
+{% for task in tasks %}
+<div class="text-warning">
+    <h3>{{task.title}}</h3>
+    <p>Created: {{task.date}} Deadline: {{task.deadline}}<br></p>
+    <input type="checkbox" value="{{task.is_done}}"/>
+    </div>
+{% endfor %}
+{% else %}
+<h1 style="color: white">You don't have a tasks yet.</h1>
+<p>Do you like to add? <a class="btn-warning" href="{{url_for('create_task')}}">Add Task</a></p>
+{% endif %}
+{% endblock %}
