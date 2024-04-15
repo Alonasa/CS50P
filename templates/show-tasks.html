@@ -2,15 +2,61 @@
 
 {% block content %}
 {% if tasks %}
-{% for task in tasks %}
+
 <div class="text-warning">
-    <h3>{{task.title}}</h3>
-    <p>Created: {{task.date}} Deadline: {{task.deadline}}<br></p>
-    <input type="checkbox" value="{{task.is_done}}"/>
-    </div>
-{% endfor %}
+    <section class="vh-100 gradient-custom-2">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-md-12 col-xl-10">
+                    <div style="background-color: #73717a" class="card mask-custom">
+                        <div class="card-body p-4 text-warning">
+                            <div class="text-center pt-3 pb-2">
+                                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-todo-list/check1.webp"
+                                     alt="Check" width="60">
+                                <h2 class="my-4">Task List</h2>
+                            </div>
+                            <table class="table text-warning mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Task</th>
+                                        <th scope="col">Deadline</th>
+                                        <th scope="col">Priority</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in tasks %}
+                                    <tr class="fw-normal">
+                                        <th>
+                                            <span class="ms-2">{{task.title}}</span>
+                                        </th>
+                                        <td class="align-middle">
+                                            <span>{{task.deadline}}</span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <h6 class="mb-0"><span class="badge bg-danger">High priority</span></h6>
+                                        </td>
+                                        <td class="align-middle">
+                                            <a href="#!" data-mdb-tooltip-init title="Done"><i
+                                                    class="fas fa-check fa-lg text-success me-3"></i></a>
+                                            <a href="#!" data-mdb-tooltip-init title="Remove"><i
+                                                    class="fas fa-trash-alt fa-lg text-warning"></i></a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</div>
+</section>
+
 {% else %}
 <h1 style="color: white">You don't have a tasks yet.</h1>
 <p>Do you like to add? <a class="btn-warning" href="{{url_for('create_task')}}">Add Task</a></p>
 {% endif %}
 {% endblock %}
+
+</div>
