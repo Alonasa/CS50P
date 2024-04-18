@@ -114,7 +114,7 @@ def authorize():
         add_user(form_password.strip(), form_email.strip())
         flash("New user added to the system".title())
 
-    return render_template("base-form.html", form=form)
+    return render_template("login.html", form=form)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -128,11 +128,27 @@ def login():
         if user and user.password == password:
             session['user_id'] = user.id  # Storing user_id in session
             flash('Authorized in the system'.title())
-            return render_template("show-tasks.html", tasks=get_tasks())
+            form = AddTaskForm()
+            if 'user_id' not in session:
+                flash("You are not logged in.")
+                return redirect(url_for("login"))
+
+            if request.method == "POST" and form.validate_on_submit():
+                new_task = Task(
+                    date=datetime.datetime.now().date(),
+                    title=form.title.data,
+                    deadline=form.deadline.data,
+                    is_done=False,
+                    author_id=session['user_id']
+                )
+                db.session.add(new_task)
+                db.session.commit()
+                flash("New Task Added")
+            return render_template("show-tasks.html", tasks=get_tasks(), form=form)
         else:
             flash('Some of the fields is wrong'.title())
 
-    return render_template("base-form.html", form=form)
+    return render_template("login.html", form=form)
 
 
 @app.route("/add-task", methods=["POST", "GET"])
@@ -173,7 +189,6 @@ def show_statistic():
 def get_tasks():
     user_id = session.get('user_id')
     tasks = Task.query.filter_by(author_id=user_id).all()
-    print(tasks)
     return tasks
 
 
