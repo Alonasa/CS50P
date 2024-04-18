@@ -128,7 +128,7 @@ def login():
         if user and user.password == password:
             session['user_id'] = user.id  # Storing user_id in session
             flash('Authorized in the system'.title())
-            return redirect(url_for("create_task"))
+            return render_template("show-tasks.html", tasks=get_tasks())
         else:
             flash('Some of the fields is wrong'.title())
 
@@ -153,7 +153,6 @@ def create_task():
         db.session.add(new_task)
         db.session.commit()
         flash("New Task Added")
-        print(get_tasks())
         return render_template("show-tasks.html", tasks=get_tasks())
 
     return render_template("tasks.html", form=form)
