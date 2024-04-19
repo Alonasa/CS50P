@@ -128,23 +128,7 @@ def login():
         if user and user.password == password:
             session['user_id'] = user.id  # Storing user_id in session
             flash('Authorized in the system'.title())
-            form = AddTaskForm()
-            if 'user_id' not in session:
-                flash("You are not logged in.")
-                return redirect(url_for("login"))
-
-            if request.method == "POST" and form.validate_on_submit():
-                new_task = Task(
-                    date=datetime.datetime.now().date(),
-                    title=form.title.data,
-                    deadline=form.deadline.data,
-                    is_done=False,
-                    author_id=session['user_id']
-                )
-                db.session.add(new_task)
-                db.session.commit()
-                flash("New Task Added")
-            return render_template("show-tasks.html", tasks=get_tasks(), form=form)
+            return redirect(url_for('create_task'))
         else:
             flash('Some of the fields is wrong'.title())
 
@@ -169,9 +153,8 @@ def create_task():
         db.session.add(new_task)
         db.session.commit()
         flash("New Task Added")
-        return render_template("show-tasks.html", tasks=get_tasks())
-
-    return render_template("tasks.html", form=form)
+        return render_template("show-tasks.html", tasks=get_tasks(), form=form)
+    flash("SOMETHING WENT WRONG")
 
 
 def update_task():
