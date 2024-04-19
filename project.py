@@ -155,6 +155,7 @@ def create_task():
         flash("New Task Added")
         return render_template("show-tasks.html", tasks=get_tasks(), form=form)
     flash("SOMETHING WENT WRONG")
+    return render_template("show-tasks.html", tasks=get_tasks(), form=form)
 
 
 def update_task():
