@@ -102,17 +102,27 @@ def add_user(password, email):
 @app.route("/authorize", methods=["GET", "POST"])
 def authorize():
     form = RegisterForm()
-    form_email = form.email.data
-    form_password = form.password.data
 
     if request.method == "POST" and form.validate_on_submit():
-        user = User.query.filter_by(email=form_email.strip()).first()
+        form_email = form.email.data.strip()
+        form_password = form.password.data.strip()
 
-        if user:
-            flash("You are already have an account.... Redirecting to login.....".title())
-            return redirect(url_for("login"))
-        add_user(form_password.strip(), form_email.strip())
-        flash("New user added to the system".title())
+        existing_user = User.query.filter_by(email=form_email).first()
+        if existing_user:
+            if existing_user.password == form_password:
+                session['user_id'] = existing_user.id
+                flash("Login successful. Welcome back!")
+                return redirect(url_for('create_task'))
+            else:
+                flash("Incorrect password. Please try again.")
+                return render_template("login.html", form=form)
+
+        new_user = User(email=form_email, password=form_password)
+        db.session.add(new_user)
+        db.session.commit()
+        session['user_id'] = new_user.id  # Log in the new user immediately after registration
+        flash("Registration successful. You are now logged in.")
+        return redirect(url_for('main'))
 
     return render_template("login.html", form=form)
 
